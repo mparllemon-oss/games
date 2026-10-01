@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#101522" />
+  <meta name="description" content="Juice Rush — a polished touch and mouse fruit cutting game." />
+  <title>Juice Rush — Fruit Cutting Game</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main id="app" aria-label="Juice Rush fruit cutting game">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="hud" class="hud hidden" aria-live="polite">
+      <div class="hud-card score-card"><span class="hud-label">Score</span><strong id="scoreValue">0</strong></div>
+      <div class="hud-card lives-card"><span class="hud-label">Lives</span><div id="livesValue" class="lives" aria-label="3 lives"></div></div>
+      <button id="pauseBtn" class="icon-btn" aria-label="Pause game" title="Pause">Ⅱ</button>
+    </div>
+
+    <div id="comboBadge" class="combo-badge" aria-hidden="true"><span id="comboText">Combo x2</span></div>
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <section id="menuScreen" class="screen active">
+      <div class="menu-glow"></div>
+      <div class="brand-wrap">
+        <div class="fruit-mark" aria-hidden="true">🍉</div>
+        <p class="eyebrow">Slice fast. Stay sharp.</p>
+        <h1>Juice <span>Rush</span></h1>
+        <p class="subtitle">Swipe through flying fruit, chain combos, and dodge bombs.</p>
+      </div>
+      <div class="menu-panel glass">
+        <div class="best-row"><span>Best Score</span><strong id="menuBest">0</strong></div>
+        <button id="playBtn" class="primary-btn"><span class="btn-icon">▶</span><span>Play</span></button>
+        <div class="secondary-row">
+          <button id="settingsBtn" class="secondary-btn">⚙ <span>Settings</span></button>
+          <button id="howBtn" class="secondary-btn">✦ <span>How to Play</span></button>
+        </div>
+      </div>
+      <p class="input-tip">Touch, mouse, or trackpad — swipe across fruit to slice.</p>
+    </section>
+
+    <section id="settingsScreen" class="screen">
+      <div class="modal-card glass">
+        <button class="back-btn" data-back="menu" aria-label="Back">←</button>
+        <p class="eyebrow">Preferences</p>
+        <h2>Settings</h2>
+        <div class="setting-row"><div><strong>Sound</strong><span>Slice and game effects</span></div><button id="soundToggle" class="toggle" role="switch" aria-checked="true"><span></span></button></div>
+        <div class="setting-row"><div><strong>Music</strong><span>Light background rhythm</span></div><button id="musicToggle" class="toggle" role="switch" aria-checked="true"><span></span></button></div>
+        <div class="setting-row"><div><strong>Haptics</strong><span>Vibration where supported</span></div><button id="hapticToggle" class="toggle" role="switch" aria-checked="true"><span></span></button></div>
+      </div>
+    </section>
+
+    <section id="howScreen" class="screen">
+      <div class="modal-card glass">
+        <button class="back-btn" data-back="menu" aria-label="Back">←</button>
+        <p class="eyebrow">Quick Guide</p>
+        <h2>How to Play</h2>
+        <div class="guide-grid">
+          <div class="guide-item"><span>✂</span><div><strong>Swipe to Slice</strong><p>Hold and move your finger, mouse, or trackpad through fruit.</p></div></div>
+          <div class="guide-item"><span>⚡</span><div><strong>Build Combos</strong><p>Slice several fruits quickly for extra points.</p></div></div>
+          <div class="guide-item"><span>💣</span><div><strong>Avoid Bombs</strong><p>Hitting a bomb costs a life and breaks your combo.</p></div></div>
+          <div class="guide-item"><span>⭐</span><div><strong>Catch Bonuses</strong><p>Golden fruit gives bonus points and a burst of energy.</p></div></div>
+        </div>
+        <button id="howPlayBtn" class="primary-btn">Play Now</button>
+      </div>
+    </section>
+
+    <section id="pauseScreen" class="screen">
+      <div class="modal-card compact glass">
+        <p class="eyebrow">Game Paused</p>
+        <h2>Pause</h2>
+        <button id="resumeBtn" class="primary-btn">Resume</button>
+        <button id="pauseHomeBtn" class="secondary-btn full">Home</button>
+      </div>
+    </section>
+
+    <section id="gameOverScreen" class="screen">
+      <div class="modal-card glass gameover-card">
+        <div class="gameover-icon">✦</div>
+        <p class="eyebrow">Round Complete</p>
+        <h2>Game Over</h2>
+        <div id="newBest" class="new-best hidden">New Best!</div>
+        <div class="score-summary"><div><span>Score</span><strong id="finalScore">0</strong></div><div><span>Best</span><strong id="finalBest">0</strong></div></div>
+        <button id="restartBtn" class="primary-btn">Restart</button>
+        <button id="homeBtn" class="secondary-btn full">Home</button>
+      </div>
+    </section>
+  </main>
+  <script src="js/game.js"></script>
+</body>
+</html>
