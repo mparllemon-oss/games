@@ -86,7 +86,7 @@ const TAU=Math.PI*2, lanes=[-1,0,1], clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), l
 const defaults={bank:0,bestScore:0,bestDistance:0,totalRuns:0,totalCoins:0,xp:0,level:1,selectedCharacter:'nova',selectedTheme:'city',selectedBoard:'flux',unlockedCharacters:['nova'],unlockedThemes:['city'],unlockedBoards:['flux'],sound:true,reducedFx:false,missionSeed:'',missions:{},achievements:{},dailyStamp:''};
 let save=loadSave();
 function loadSave(){try{return {...defaults,...JSON.parse(localStorage.getItem('voltRunnerSave')||'{}')}}catch(e){return {...defaults}}}
-function persist(){localStorage.setItem('voltRunnerSave',JSON.stringify(save));refreshMenu()}
+function persist(){try{localStorage.setItem('voltRunnerSave',JSON.stringify(save))}catch(e){}refreshMenu()}
 function xpNeed(l){return 250+l*170}
 function addXP(n){save.xp+=n;while(save.xp>=xpNeed(save.level)){save.xp-=xpNeed(save.level);save.level++;toast(`Level ${save.level} reached!`,`New unlocks may be available.`)}persist()}
 
@@ -204,6 +204,7 @@ function drawPlayer(th){if(g.state==='menu'){return}const p=proj(g.x,1.8,g.jumpY
 function drawFx(th){const weather=THEMES[save.selectedTheme].weather;ctx.save();if(weather==='rain'){ctx.strokeStyle='rgba(190,225,255,.22)';ctx.lineWidth=1;for(const r of rain){r.y+=(g.state==='running'?r.v/60:1);r.x-=1.2;if(r.y>H){r.y=-20;r.x=Math.random()*W}ctx.beginPath();ctx.moveTo(r.x,r.y);ctx.lineTo(r.x-4,r.y+r.l);ctx.stroke()}}if(weather==='snow'){ctx.fillStyle='rgba(255,255,255,.72)';for(const s of snow){s.y+=s.v/60;s.x+=Math.sin(g.t+s.p)*.5;if(s.y>H){s.y=-5;s.x=Math.random()*W}ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,TAU);ctx.fill()}}if(g.powers.boost>0||g.eventTimer>0){ctx.strokeStyle=(g.powers.boost>0?'rgba(112,255,157,.24)':'rgba(255,255,255,.18)');for(let i=0;i<(save.reducedFx?8:20);i++){const x=Math.random()*W,y=rand(H*.3,H);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(x-W/2)*.05,y+rand(14,42));ctx.stroke()}}for(const p of particles){ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,TAU);ctx.fill()}ctx.globalAlpha=1;for(const p of popups){ctx.globalAlpha=clamp(p.life*1.6,0,1);ctx.fillStyle=p.color;ctx.font='900 14px sans-serif';ctx.textAlign='center';ctx.fillText(p.text,p.x,p.y)}ctx.globalAlpha=1;ctx.restore()}
 function shade(hex,amt){let c=hex.replace('#','');if(c.length!==6)return hex;let n=parseInt(c,16),r=clamp((n>>16)+amt,0,255),g=clamp(((n>>8)&255)+amt,0,255),b=clamp((n&255)+amt,0,255);return `rgb(${r},${g},${b})`}
 
+resetRun();g.state='menu';
 function frame(now){let dt=Math.min(.033,(now-last)/1000||.016);last=now;update(dt);draw();raf=requestAnimationFrame(frame)}raf=requestAnimationFrame(frame);
 
 // Lightweight generated audio: no external files.
