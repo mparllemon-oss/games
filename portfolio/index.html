@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hussain Shah | Portfolio</title>
+  <meta name="description" content="Personal portfolio website of Hussain Shah, aspiring software engineer." />
+  <style>
+    :root{--bg:#0b1020;--card:#121a30;--text:#f4f7ff;--muted:#aab4d0;--accent:#6c8cff;--accent2:#8f5cff;--line:rgba(255,255,255,.09)}
+    *{box-sizing:border-box;margin:0;padding:0} html{scroll-behavior:smooth}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at top left,rgba(108,140,255,.18),transparent 32%),radial-gradient(circle at 80% 20%,rgba(143,92,255,.13),transparent 28%),var(--bg);color:var(--text);line-height:1.6}
+    a{color:inherit;text-decoration:none}.container{width:min(1100px,92%);margin:auto}
+    nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);background:rgba(11,16,32,.78);border-bottom:1px solid var(--line)}
+    .nav-inner{height:72px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{font-size:1.25rem;font-weight:800}.brand span{color:var(--accent)}
+    .nav-links{display:flex;gap:20px;flex-wrap:wrap}.nav-links a{color:var(--muted);font-weight:600;font-size:.95rem}.nav-links a:hover{color:#fff}
+    .hero{min-height:86vh;display:grid;place-items:center;padding:80px 0 60px}.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:#c8d2ff;background:rgba(255,255,255,.03);margin-bottom:20px}
+    h1{font-size:clamp(2.7rem,7vw,5.4rem);line-height:.98;letter-spacing:-2px} h1 span{background:linear-gradient(90deg,var(--accent),#9b75ff,#5de0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .hero p{color:var(--muted);font-size:1.08rem;max-width:650px;margin:24px 0 30px}.buttons{display:flex;gap:14px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 19px;border-radius:14px;font-weight:800;border:1px solid var(--line);transition:.2s ease}.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none}.btn.secondary{background:rgba(255,255,255,.04)}.btn:hover{transform:translateY(-2px)}
+    .profile-card{min-height:420px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));padding:28px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;box-shadow:0 20px 80px rgba(0,0,0,.25)}
+    .orb{position:absolute;width:240px;height:240px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));top:55px;left:50%;transform:translateX(-50%);box-shadow:0 0 80px rgba(108,140,255,.35)}
+    .code-mark{position:absolute;inset:0;display:grid;place-items:center;font:900 7rem/1 monospace;color:rgba(255,255,255,.95);z-index:2}.profile-card .info{position:relative;z-index:3;background:rgba(6,10,22,.72);padding:20px;border-radius:20px;border:1px solid var(--line)}.info h3{font-size:1.45rem}.info p{margin:4px 0 0;font-size:.95rem}
+    section{padding:88px 0}.section-head{margin-bottom:34px}.section-head small{color:#8fa3ff;font-weight:800;text-transform:uppercase;letter-spacing:1.4px}.section-head h2{font-size:clamp(2rem,4vw,3rem);margin-top:7px}.section-head p{color:var(--muted);max-width:700px;margin-top:9px}
+    .about-grid,.skills-grid,.projects-grid{display:grid;gap:18px}.about-grid{grid-template-columns:1fr 1fr}.skills-grid{grid-template-columns:repeat(4,1fr)}.projects-grid{grid-template-columns:repeat(3,1fr)}
+    .card{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:22px;padding:24px}.card h3{margin-bottom:9px}.card p{color:var(--muted)}.skill{font-weight:800;text-align:center;padding:22px 14px}.skill span{display:block;font-size:2rem;margin-bottom:9px}
+    .project{min-height:245px;display:flex;flex-direction:column;justify-content:space-between;transition:.2s ease}.project:hover{transform:translateY(-4px);border-color:rgba(108,140,255,.55)}.tag{display:inline-block;padding:5px 9px;border-radius:999px;font-size:.76rem;background:rgba(108,140,255,.12);color:#b9c6ff;margin-bottom:16px}.project-link{margin-top:22px;color:#a9b8ff;font-weight:800}
+    .contact{text-align:center;background:linear-gradient(145deg,rgba(108,140,255,.13),rgba(143,92,255,.08));border:1px solid var(--line);border-radius:28px;padding:50px 24px}.contact p{color:var(--muted);max-width:650px;margin:12px auto 24px}footer{padding:32px 0 45px;color:var(--muted);text-align:center}
+    @media(max-width:850px){.hero-grid,.about-grid{grid-template-columns:1fr}.skills-grid{grid-template-columns:repeat(2,1fr)}.projects-grid{grid-template-columns:1fr}.hero{padding-top:55px}.profile-card{min-height:340px}}
+    @media(max-width:600px){.nav-inner{height:auto;padding:16px 0;align-items:flex-start}.nav-links{gap:12px;justify-content:flex-end}.nav-links a{font-size:.84rem}h1{letter-spacing:-1px}}
+  </style>
+</head>
+<body>
+  <nav><div class="container nav-inner"><a class="brand" href="#home">Hussain<span>.</span></a><div class="nav-links"><a href="#about">About</a><a href="#skills">Skills</a><a href="#projects">Projects</a><a href="#contact">Contact</a></div></div></nav>
+  <main>
+    <section class="hero" id="home"><div class="container hero-grid"><div><div class="eyebrow">👋 Welcome to my portfolio</div><h1>Hi, I'm <span>Hussain Shah</span></h1><p>I am learning web development and working toward becoming a software engineer. I enjoy building websites, games, and interactive projects using HTML, CSS, and JavaScript.</p><div class="buttons"><a class="btn primary" href="#projects">View My Projects</a><a class="btn secondary" href="#contact">Contact Me</a></div></div><div class="profile-card"><div class="orb"></div><div class="code-mark">&lt;/&gt;</div><div class="info"><h3>Software Engineer in Progress 🚀</h3><p>HTML • CSS • JavaScript • Games • Web Projects</p></div></div></div></section>
+    <section id="about"><div class="container"><div class="section-head"><small>About Me</small><h2>Learning, building, improving.</h2><p>I like turning ideas into working projects and improving my coding skills step by step.</p></div><div class="about-grid"><div class="card"><h3>My Goal</h3><p>My goal is to become a software engineer and create useful, fun, and modern digital experiences.</p></div><div class="card"><h3>What I Build</h3><p>I work on web games, responsive websites, JavaScript projects, and experiments that work on both phone and laptop.</p></div></div></div></section>
+    <section id="skills"><div class="container"><div class="section-head"><small>Skills</small><h2>Technologies I use</h2></div><div class="skills-grid"><div class="card skill"><span>🌐</span>HTML</div><div class="card skill"><span>🎨</span>CSS</div><div class="card skill"><span>⚡</span>JavaScript</div><div class="card skill"><span>🐙</span>GitHub</div></div></div></section>
+    <section id="projects"><div class="container"><div class="section-head"><small>Projects</small><h2>Some things I've built</h2></div><div class="projects-grid"><article class="card project"><div><span class="tag">Game</span><h3>Snake Game</h3><p>A responsive snake game with keyboard and mobile controls.</p></div><a class="project-link" href="https://muhammadsafwantahirdeveloper-source.github.io/snakegame/" target="_blank" rel="noopener">Open Project →</a></article><article class="card project"><div><span class="tag">JavaScript</span><h3>Space Shooter</h3><p>A fast 2D space shooter game with enemies, score, and mobile-friendly controls.</p></div><span class="project-link">Project showcase</span></article><article class="card project"><div><span class="tag">Web App</span><h3>Bluetooth Project</h3><p>A web-based project exploring Bluetooth device interaction and responsive UI.</p></div><span class="project-link">Project showcase</span></article></div></div></section>
+    <section id="contact"><div class="container"><div class="contact"><h2>Let's build something great.</h2><p>You can add your email, WhatsApp, GitHub, Instagram, or any other contact link here.</p><a class="btn primary" href="mailto:your@email.com">Email Me</a></div></div></section>
+  </main>
+  <footer><div class="container">© <span id="year"></span> Hussain Shah. Built with HTML, CSS & JavaScript.</div></footer>
+  <script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+</body>
+</html>
