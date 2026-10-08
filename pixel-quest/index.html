@@ -30,9 +30,39 @@
   .primary:active{transform:translateY(3px);box-shadow:0 3px 0 #a76500}
   .mini{font-size:13px;opacity:.72;margin-top:14px}
   @media (min-width:900px){.controls{opacity:.55}.btn{width:52px;height:52px}}
+  /* Mobile: landscape-friendly game view, with compact edge controls */
+  @media (pointer:coarse), (max-width:899px){
+    body{display:flex;align-items:center;justify-content:center;min-height:100dvh}
+    .wrap{width:100%;max-width:100%;padding:0}
+    .game-shell{width:min(100vw, calc(100dvh * 16 / 9));margin:auto;border-width:1px;border-radius:8px}
+    .controls{bottom:3px;height:40px}
+    .pad{left:5px;gap:5px}
+    .actions{right:5px}
+    .btn{width:36px;height:36px;border-radius:10px;font-size:16px;box-shadow:0 3px 0 #030817aa,inset 0 0 0 1px #ffffff30}
+    .jump{width:49px;font-size:10px}
+    .topbar{top:4px;left:4px;right:4px;gap:3px;font-size:clamp(7px,1.8vw,12px)}
+    .pill{padding:3px 5px;border-radius:7px}
+    .overlay{padding:6px}
+    .card{padding:10px;border-radius:12px;max-height:94%;overflow:auto}
+    h1{font-size:clamp(21px,5vw,38px)}
+    h2{font-size:clamp(20px,4vw,30px)}
+    .sub{margin:5px 0 8px;font-size:clamp(10px,1.7vw,14px)}
+    .primary{padding:7px 15px;font-size:14px}
+    .mini{font-size:10px;margin-top:7px}
+  }
+  @media (pointer:coarse) and (orientation:portrait){
+    .rotate-tip{display:flex}
+  }
+  .rotate-tip{display:none;position:fixed;inset:0;z-index:30;background:#0d1328;color:white;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:19px;font-weight:750}
+  @media (max-width:899px) and (orientation:portrait){.rotate-tip{display:flex}}
+  @media (max-width:899px) and (orientation:landscape){
+    .game-shell{max-height:100dvh}
+    .controls{height:39px;bottom:3px}
+  }
 </style>
 </head>
 <body>
+<div class="rotate-tip">📱 Phone ko sideways (landscape) karein game khelne ke liye ↻</div>
 <div class="wrap">
   <div class="game-shell">
     <canvas id="game" width="960" height="540" aria-label="Pixel Quest platform game"></canvas>
