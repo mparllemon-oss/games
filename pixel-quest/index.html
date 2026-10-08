@@ -10,7 +10,7 @@
   html,body{margin:0;height:100%;background:radial-gradient(circle at top,#23386a,#0b1022 60%);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text);overflow:hidden}
   body{display:grid;place-items:center}
   .wrap{width:min(100vw,1200px);padding:10px}
-  .game-shell{position:relative;border:3px solid #ffffff22;border-radius:20px;overflow:hidden;box-shadow:0 18px 55px #0008;background:#000}
+  .game-shell{isolation:isolate;position:relative;border:3px solid #ffffff22;border-radius:20px;overflow:hidden;box-shadow:0 18px 55px #0008;background:#000}
   canvas{display:block;width:100%;height:auto;image-rendering:auto;touch-action:none;background:#68b7ff}
   .topbar{position:absolute;inset:10px 12px auto 12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;z-index:4;font-weight:800;text-shadow:0 2px 0 #0007;font-size:clamp(12px,1.7vw,19px)}
   .pill{background:#081127bb;border:1px solid #ffffff24;padding:8px 11px;border-radius:14px;backdrop-filter:blur(5px)}
@@ -119,6 +119,7 @@
   const TOTAL_LEVELS=3;let level=1;
 
   const worldWidth = 180*T;
+  const finishX = 168*T;
   const groundY = 10*T;
   const blocks=[], coinsArr=[], enemies=[], particles=[], popups=[];
   const pits = [[23,27],[52,55],[83,87],[119,123],[148,151]];
@@ -192,6 +193,7 @@
     for(let i=0;i<24;i++){const el=document.createElement('span');el.className='win-spark';el.textContent=['✨','⭐','🎇','💫'][i%4];el.style.setProperty('--x',Math.random()*95+'%');el.style.setProperty('--y',Math.random()*90+'%');el.style.setProperty('--duration',.45+Math.random()+'s');screen.appendChild(el)}
     document.querySelector('.game-shell').appendChild(screen);
     document.getElementById('win-next').onclick=finalWin?startGame:nextLevel;
+    screen.style.zIndex='100';
     [523,659,784,1046,784,1046,1318].forEach((n,i)=>setTimeout(()=>beep(n,.16,'triangle',.05),i*140));
   }
   function loseLife(){
@@ -219,7 +221,7 @@
       beep(370,.08,'square');
     } else if(!jumpBoostUsed && lastJumpTap && now-lastJumpTap<=360){
       // Second quick press: boost the same jump high enough for upper platforms.
-      player.vy=Math.min(player.vy,-720); jumpBoostUsed=true;
+      player.vy=Math.min(player.vy,-810); jumpBoostUsed=true;
       burst(player.x+player.w/2,player.y+player.h,'#dff8ff',8);
       popup('HIGH JUMP!',player.x+player.w/2,player.y-8);
       beep(620,.07,'square');
@@ -258,7 +260,7 @@
         else loseLife();
       }
     });
-    if(player.x>171*T && player.y<groundY) victory();
+    if(gameState==='playing' && player.x+player.w>=finishX){victory();return;}
     cameraX += ((player.x - W*.36)-cameraX)*Math.min(1,dt*5.5); cameraX=Math.max(0,Math.min(worldWidth-W,cameraX));
     updateFX(dt);
   }
@@ -291,7 +293,7 @@
     for(const co of coinsArr){if(co.got||co.x<cameraX-20||co.x>cameraX+W+20)continue;let sy=co.y+Math.sin(performance.now()/180+co.phase)*3;ctx.fillStyle='#ffd633';ctx.beginPath();ctx.ellipse(co.x,sy,8,13,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#b77b00';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#fff59d';ctx.fillRect(co.x-2,sy-8,3,10);}
     enemies.forEach(e=>{if(e.x<cameraX-80||e.x>cameraX+W+80)return;ctx.save();ctx.translate(e.x,e.y);if(!e.alive){ctx.scale(1,0.35);ctx.translate(0,65);}ctx.fillStyle='#7a4b28';roundRect(1,6,e.w-2,e.h-6,8);ctx.fillStyle='#f2e4bd';ctx.fillRect(6,13,7,7);ctx.fillRect(21,13,7,7);ctx.fillStyle='#111';ctx.fillRect(8,15,3,3);ctx.fillRect(23,15,3,3);ctx.fillStyle='#4c2c18';ctx.fillRect(2,28,11,5);ctx.fillRect(21,28,11,5);ctx.restore();});
   }
-  function drawGoal(){const x=174*T;ctx.fillStyle='#eaeef7';ctx.fillRect(x,groundY-190,8,190);ctx.fillStyle='#ff4f5f';ctx.beginPath();ctx.moveTo(x+8,groundY-185);ctx.lineTo(x+88,groundY-160);ctx.lineTo(x+8,groundY-135);ctx.closePath();ctx.fill();ctx.fillStyle='#314267';ctx.fillRect(x+115,groundY-130,130,130);ctx.fillStyle='#52668e';for(let i=0;i<4;i++)ctx.fillRect(x+118+i*31,groundY-150,23,28);ctx.fillStyle='#18233d';ctx.fillRect(x+165,groundY-62,35,62);ctx.fillStyle='#ffd84d';ctx.beginPath();ctx.arc(x+12,groundY-194,12,0,Math.PI*2);ctx.fill();}
+  function drawGoal(){const x=finishX;ctx.fillStyle='#eaeef7';ctx.fillRect(x,groundY-190,8,190);ctx.fillStyle='#ff4f5f';ctx.beginPath();ctx.moveTo(x+8,groundY-185);ctx.lineTo(x+88,groundY-160);ctx.lineTo(x+8,groundY-135);ctx.closePath();ctx.fill();ctx.fillStyle='#314267';ctx.fillRect(x+115,groundY-130,130,130);ctx.fillStyle='#52668e';for(let i=0;i<4;i++)ctx.fillRect(x+118+i*31,groundY-150,23,28);ctx.fillStyle='#18233d';ctx.fillRect(x+165,groundY-62,35,62);ctx.fillStyle='#ffd84d';ctx.beginPath();ctx.arc(x+12,groundY-194,12,0,Math.PI*2);ctx.fill();ctx.font='bold 27px system-ui';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.strokeStyle='#1d2450';ctx.lineWidth=5;ctx.strokeText('🏁 FINISH!',x+45,groundY-225);ctx.fillText('🏁 FINISH!',x+45,groundY-225);}
   function drawPlayer(){if(player.inv>0&&Math.floor(player.inv*12)%2)return;ctx.save();ctx.translate(player.x+player.w/2,player.y+player.h/2);if(player.dir<0)ctx.scale(-1,1);const run=Math.sin(performance.now()/85)*4;ctx.fillStyle='#1d2450';ctx.fillRect(-13,7,11,19+run);ctx.fillRect(3,7,11,19-run);ctx.fillStyle='#f2b17d';roundRect(-12,-16,24,24,7);ctx.fillStyle='#673fd7';ctx.fillRect(-15,-24,30,10);ctx.fillRect(-11,-29,22,7);ctx.fillStyle='#18b7c9';ctx.fillRect(-14,-4,28,19);ctx.fillStyle='#fff';ctx.fillRect(3,-10,5,5);ctx.fillStyle='#111';ctx.fillRect(5,-9,2,2);ctx.fillStyle='#f2b17d';ctx.fillRect(10,-7,5,5);ctx.fillStyle='#4d2e7a';ctx.fillRect(-18,-1,5,14);ctx.fillStyle='#d94d4d';ctx.fillRect(-17,2,6,17);ctx.fillRect(11,2,6,17);ctx.fillStyle='#1a1e33';ctx.fillRect(-15,23+run,14,7);ctx.fillRect(2,23-run,14,7);ctx.restore();}
   function drawFX(){for(const p of particles){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);}ctx.globalAlpha=1;ctx.textAlign='center';ctx.font='900 18px system-ui';ctx.fillStyle='#fff';ctx.strokeStyle='#000';ctx.lineWidth=4;for(const p of popups){ctx.strokeText(p.text,p.x,p.y);ctx.fillText(p.text,p.x,p.y);}}
   function roundRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
