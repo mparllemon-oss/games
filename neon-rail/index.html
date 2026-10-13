@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Neon Rail — 3D Endless Runner</title>
+<style>
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#101b35;color:#fff;font-family:system-ui,sans-serif;touch-action:none}canvas{display:block;width:100%;height:100%}button{font:inherit;cursor:pointer;color:#fff;border:1px solid #ffffff40;border-radius:16px;background:#172844;padding:12px 20px;touch-action:none}button:hover{background:#284367}button:focus-visible{outline:3px solid #fbd56b}button:disabled{opacity:.5;cursor:wait}[hidden]{display:none!important}
+#hud{position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;right:16px;display:flex;gap:10px;align-items:center;pointer-events:none}.stat{background:#101b35cb;border:1px solid #ffffff25;border-radius:16px;padding:10px 16px;backdrop-filter:blur(10px)}.stat small{display:block;color:#a9c8df;font-size:10px;letter-spacing:2px}.stat strong{font-size:24px}#pause{margin-left:auto;pointer-events:auto}#overlay{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:#07132770;backdrop-filter:blur(6px)}.card{width:min(440px,100%);max-height:90dvh;overflow:auto;padding:30px;border-radius:28px;background:linear-gradient(145deg,#14263ef5,#0e1730f5);border:1px solid #ffffff30;box-shadow:0 30px 100px #0006;text-align:center}.eyebrow{color:#72f0d4;font-size:12px;letter-spacing:4px}h1{font-size:clamp(36px,8vw,58px);line-height:1;margin:16px 0}p{color:#b7c9dc;line-height:1.6}.primary{background:#75efd5;color:#082d33;font-weight:800;width:100%;margin-top:15px}.primary:hover{background:#abffe9}.guide{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;color:#dce8f5}.guide span{padding:10px;background:#ffffff08;border-radius:10px}#controls{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}#controls div{display:flex;gap:8px}#controls button{pointer-events:auto;width:58px;height:54px;padding:0;font-size:23px;background:#101b35b8;backdrop-filter:blur(8px);user-select:none}#hint{position:fixed;bottom:85px;width:100%;text-align:center;color:#e4f4ff;font-size:12px;pointer-events:none} @media(max-width:480px){.stat{padding:8px 12px}.stat strong{font-size:20px}.card{padding:24px}#controls button{width:52px}}
+</style>
+</head>
+<body>
+<div id="hud"><div class="stat"><small>SCORE</small><strong id="score">0</strong></div><div class="stat"><small>COINS</small><strong id="coins">0</strong></div><div class="stat"><small>BEST</small><strong id="best">0</strong></div><button id="pause" aria-label="Pause game" hidden>Ⅱ</button></div>
+<div id="hint">Police on your tail! · Jump barriers · Slide under gates</div>
+<div id="controls" hidden><div><button data-action="left" aria-label="Move left">←</button><button data-action="right" aria-label="Move right">→</button></div><div><button data-action="slide" aria-label="Slide">↓</button><button data-action="jump" aria-label="Jump">↑</button></div></div>
+<div id="overlay"><div class="card"><div class="eyebrow">ENDLESS CITY ADVENTURE</div><h1 id="title">NEON<br>RAIL</h1><p id="message">Three lanes. One endless adventure.<br>Collect gold and keep moving.</p><div class="guide"><span>← → / A D: move</span><span>↑ / W / Space: jump</span><span>↓ / S: slide</span><span>P / Esc: pause</span></div><p>Phone: swipe or use the buttons.</p><button class="primary" id="start" disabled>Loading 3D…</button></div></div>
+<script>
+// A pinned, classic Three.js build also works when opened via file://.
+const loader=document.createElement('script');
+loader.src='https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js';
+loader.onload=()=>{try{boot()}catch(error){showError('Could not initialize 3D. Enable hardware acceleration or try another browser.');console.error(error)}};
+loader.onerror=()=>showError('Three.js could not load. Check your internet connection and reload.');
+document.head.appendChild(loader);
+function showError(message){document.getElementById('message').textContent=message;document.getElementById('start').textContent='Reload page';document.getElementById('start').disabled=false;document.getElementById('start').onclick=()=>location.reload()}
+function boot(){
+ 'use strict';
+ const $=id=>document.getElementById(id),lanes=[-3,0,3];
+ const scene=new THREE.Scene();scene.background=new THREE.Color(0x9ac9dc);scene.fog=new THREE.Fog(0x9ac9dc,38,155);
+ const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,220);
+ const renderer=new THREE.WebGLRenderer({antialias:true});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setSize(innerWidth,innerHeight);
+ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
+ document.body.prepend(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xe8f7ff,0x515068,2));
+ const sun=new THREE.DirectionalLight(0xffefcc,2.6);sun.position.set(-10,20,8);sun.castShadow=true;
+ sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-18,right:18,top:20,bottom:-35,near:1,far:80});sun.shadow.bias=-.001;scene.add(sun);
+ const materials={};
+ function mat(color){return materials[color]||(materials[color]=new THREE.MeshStandardMaterial({color,roughness:.65}))}
+ const box=new THREE.BoxGeometry(1,1,1);
+ function cube(parent,color,x,y,z,w,h,d){const m=new THREE.Mesh(box,mat(color));m.position.set(x,y,z);m.scale.set(w,h,d);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+ // Recycling track segments keeps memory bounded, even during long runs.
+ const tiles=[];
+ for(let i=0;i<12;i++){
+  const tile=new THREE.Group();tile.position.z=12-i*16;
+  cube(tile,0x4c5870,0,-.3,0,10,.6,16);
+  for(const x of lanes){for(const dx of [-.85,.85])cube(tile,0xaac3c8,x+dx,.03,0,.09,.08,16);for(let z=-7;z<8;z+=2)cube(tile,0x354155,x,.015,z,2.1,.06,.22)}
+  for(const side of [-1,1]){
+   cube(tile,0xf1d6bc,side*6,-.1,0,2,.4,16);
+   const h=5+Math.random()*12;
+   cube(tile,[0x627da0,0x8c91b2,0x5c9d9c][i%3],side*(10+Math.random()*2),h/2,0,5,h,12);
+   for(let y=2;y<h-1;y+=2.5)cube(tile,0xb9eee8,side*7.45,y,0,.06,.9,7);
+   cube(tile,0x243b56,side*5.8,2.2,-5,.12,4.4,.12);
+   cube(tile,0xffe8ad,side*5.8,4.4,-5,.6,.18,.6);
+  }
+  scene.add(tile);tiles.push(tile);
+ }
+ // Avatar feet sit at y=0; scaling vertically creates a crouch pose.
+ const player=new THREE.Group(),body=new THREE.Group();player.add(body);scene.add(player);
+ cube(body,0x2bc6c5,0,1.05,0,.75,.85,.5);cube(body,0xffc397,0,1.76,0,.56,.55,.52);
+ cube(body,0x27395d,0,2.05,.02,.65,.15,.6);cube(body,0x27395d,0,1.96,-.33,.65,.08,.25);
+ cube(body,0x132c43,0,1.78,-.27,.42,.11,.03);cube(body,0xffb24b,0,1.1,.33,.54,.6,.22);
+ const arms=[cube(body,0xffc397,-.52,1.05,0,.22,.65,.25),cube(body,0xffc397,.52,1.05,0,.22,.65,.25)];
+ const legs=[cube(body,0x29395e,-.22,.38,0,.28,.7,.3),cube(body,0x29395e,.22,.38,0,.28,.7,.3)];
+ for(const x of [-.22,.22])cube(body,0xf5f6ed,x,.09,-.12,.32,.18,.53);
+ // A visible police officer follows with a slight delay when lanes change.
+ const police=new THREE.Group(),policeBody=new THREE.Group();police.add(policeBody);scene.add(police);
+ cube(policeBody,0x163d75,0,1.1,0,.9,.95,.6);
+ cube(policeBody,0x101c32,0,.7,0,.95,.14,.64);
+ cube(policeBody,0xffd260,0,.7,-.33,.18,.13,.03);
+ cube(policeBody,0xffc397,0,1.85,0,.6,.57,.55);
+ cube(policeBody,0x153466,0,2.16,0,.75,.19,.65);
+ cube(policeBody,0x0b192e,0,2.08,-.38,.75,.08,.28);
+ cube(policeBody,0xffd260,0,2.17,-.34,.18,.14,.035);
+ cube(policeBody,0xffd260,-.22,1.35,-.315,.14,.2,.035);
+ // Gold markings on the back remain visible from the chase camera.
+ cube(policeBody,0xffd260,0,1.4,.315,.6,.12,.035);
+ cube(policeBody,0xffd260,0,1.18,.315,.4,.09,.035);
+ const policeArms=[cube(policeBody,0x163d75,-.6,1.1,0,.25,.75,.3),cube(policeBody,0x163d75,.6,1.1,0,.25,.75,.3)];
+ const policeLegs=[cube(policeBody,0x152847,-.25,.38,0,.32,.7,.35),cube(policeBody,0x152847,.25,.38,0,.32,.7,.35)];
+ for(const x of [-.25,.25])cube(policeBody,0x111827,x,.1,-.1,.38,.2,.55);
+ police.position.set(-.65,0,3.4);
+ let chasePhase=0,catchTime=0;
+ function animatePolice(dt,caught=false){
+  chasePhase+=dt*(caught?13:speed*.7);
+  const targetX=player.position.x+(caught?.65:-.65);
+  police.position.x+=(targetX-police.position.x)*(1-Math.exp(-7*dt));
+  police.position.z+=( (caught?.65:3.4)-police.position.z)*(1-Math.exp(-(caught?4:6)*dt));
+  police.position.y=Math.abs(Math.sin(chasePhase))*.06;
+  policeBody.rotation.z=(targetX-police.position.x)*-.06;
+  const stride=Math.sin(chasePhase)*.65;
+  policeLegs[0].rotation.x=stride;policeLegs[1].rotation.x=-stride;
+  policeArms[0].rotation.x=-stride;policeArms[1].rotation.x=stride;
+  if(caught&&catchTime>.65){police.position.y=0;policeLegs.forEach(l=>l.rotation.x=0);policeArms.forEach(a=>a.rotation.x=-1.2)}
+ }
+ const coinGeometry=new THREE.TorusGeometry(.32,.095,7,14);
+ const objects=[];let state='menu',lane=1,jumpY=0,velocityY=0,slideTime=0,distance=0,coins=0,speed=16,spawnIn=18,elapsed=0,best=0;
+ try{best=Number(localStorage.getItem('neonRailBest'))||0}catch{} $('best').textContent=best;
+ function updateHud(){$('score').textContent=Math.floor(distance+coins*25);$('coins').textContent=coins}
+ function clearObjects(){for(const o of objects)scene.remove(o.mesh);objects.length=0}
+ function addObstacle(l,type,z){
+  const g=new THREE.Group();g.position.set(lanes[l],0,z);
+  let bottom=0,top=1.05,depth=.65;
+  if(type==='train'){
+   top=3.5;depth=7;cube(g,0x236c92,0,1.75,0,2.35,3.5,7);
+   cube(g,0xc2f9f2,0,2.35,3.51,1.9,.9,.05);cube(g,0xf9d879,0,.8,3.54,1.8,.18,.06);
+   for(const x of [-.78,.78])cube(g,0xfff3ca,x,1.25,3.55,.32,.28,.06);
+  }else if(type==='gate'){
+   bottom=1.1;top=2.7;depth=.55;
+   cube(g,0xed6270,0,1.9,0,2.55,1.6,.55);
+   for(const x of [-1.18,1.18])cube(g,0x233b55,x,.55,0,.16,1.1,.3);
+   cube(g,0xffd96a,0,1.3,.3,2.4,.18,.04);
+  }else{
+   cube(g,0xf59a48,0,.525,0,2.35,1.05,.65);
+   for(const x of [-.75,0,.75])cube(g,0xffebbb,x,.55,.34,.22,.8,.03);
+  }
+  scene.add(g);objects.push({mesh:g,kind:'obstacle',bottom,top,depth,width:type==='gate'?2.55:2.35});
+ }
+ function addCoin(l,z,y=1){const m=new THREE.Mesh(coinGeometry,mat(0xffd34d));m.position.set(lanes[l],y,z);scene.add(m);objects.push({mesh:m,kind:'coin'})}
+ function spawnRow(z=-125){
+  // At least one clear lane per row; rows are spaced by travel time.
+  const safe=Math.floor(Math.random()*3),types=['barrier','gate','train'];
+  for(let l=0;l<3;l++)if(l!==safe&&Math.random()<.78)addObstacle(l,types[Math.floor(Math.random()*3)],z);
+  for(let i=0;i<5;i++)addCoin(safe,z-i*2.2);
+ }
+ function start(){
+  clearObjects();lane=1;jumpY=velocityY=slideTime=distance=coins=elapsed=0;speed=16;spawnIn=18;
+  player.position.set(0,0,0);body.scale.y=1;body.rotation.set(0,0,0);
+  police.position.set(-.65,0,3.4);policeBody.rotation.set(0,0,0);chasePhase=catchTime=0;
+  policeLegs.forEach(l=>l.rotation.x=0);policeArms.forEach(a=>a.rotation.x=0);
+  $('hint').textContent='Police on your tail! · Jump barriers · Slide under gates';
+  tiles.forEach((t,i)=>t.position.z=12-i*16);
+  spawnRow(-55);spawnRow(-90);state='running';$('overlay').hidden=true;$('controls').hidden=false;$('pause').hidden=false;$('pause').textContent='Ⅱ';updateHud();
+ }
+ function finish(){
+  state='catching';catchTime=0;body.rotation.x=.2;
+  $('controls').hidden=true;$('pause').hidden=true;$('hint').textContent='Caught! The police officer is catching up…';
+ }
+ function showGameOver(){
+  state='over';const score=Math.floor(distance+coins*25);best=Math.max(best,score);
+  try{localStorage.setItem('neonRailBest',String(best))}catch{}
+  $('best').textContent=best;$('title').textContent='CAUGHT!';$('message').textContent=`The police caught you! Score: ${score} · Coins: ${coins} · Best: ${best}`;
+  $('start').textContent='Run again';$('overlay').hidden=false;$('controls').hidden=true;$('pause').hidden=true;
+ }
+ function pause(){
+  if(state==='running'){state='paused';$('title').textContent='PAUSED';$('message').textContent='Take a breath. Your run is waiting.';$('start').textContent='Resume';$('overlay').hidden=false;$('controls').hidden=true}
+  else if(state==='paused'){state='running';$('overlay').hidden=true;$('controls').hidden=false}
+ }
+ function act(action){
+  if(state!=='running')return;
+  if(action==='left')lane=Math.max(0,lane-1);
+  if(action==='right')lane=Math.min(2,lane+1);
+  if(action==='jump'&&jumpY===0){slideTime=0;velocityY=10.5}
+  if(action==='slide'&&jumpY===0&&velocityY===0)slideTime=.9;
+ }
+ $('start').disabled=false;$('start').textContent='Start running';$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;
+ const keymap={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'jump',KeyW:'jump',Space:'jump',ArrowDown:'slide',KeyS:'slide'};
+ window.addEventListener('keydown',e=>{
+  if(keymap[e.code]||['KeyP','Escape'].includes(e.code))e.preventDefault();
+  if(e.repeat)return;
+  if(['KeyP','Escape'].includes(e.code))pause();else act(keymap[e.code]);
+ });
+ document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();act(b.dataset.action)}));
+ let touchStart=null;
+ renderer.domElement.addEventListener('pointerdown',e=>{touchStart={x:e.clientX,y:e.clientY,id:e.pointerId};renderer.domElement.setPointerCapture(e.pointerId)});
+ renderer.domElement.addEventListener('pointerup',e=>{
+  if(!touchStart||touchStart.id!==e.pointerId)return;
+  const dx=e.clientX-touchStart.x,dy=e.clientY-touchStart.y;touchStart=null;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<25)return;
+  act(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy<0?'jump':'slide'));
+ });
+ renderer.domElement.addEventListener('pointercancel',()=>touchStart=null);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='running')pause()});
+ window.addEventListener('blur',()=>{if(state==='running')pause()});
+ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();state='error';$('overlay').hidden=false;$('controls').hidden=true;showError('Graphics context lost. Reload to play again.')});
+ function resize(){camera.aspect=innerWidth/innerHeight;camera.fov=camera.aspect<.7?72:58;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+ window.addEventListener('resize',resize);resize();
+ // Fixed simulation steps make jumps and collisions independent of frame rate.
+ const STEP=1/120;let accumulator=0,last=performance.now();
+ function tick(dt){
+  elapsed+=dt;speed=Math.min(36,16+elapsed*.18);const travel=speed*dt;distance+=travel;spawnIn-=travel;
+  if(spawnIn<=0){spawnRow();spawnIn+=speed*1.65+8}
+  const oldX=player.position.x;player.position.x+=(lanes[lane]-oldX)*(1-Math.exp(-14*dt));
+  body.rotation.z=(lanes[lane]-player.position.x)*-.085;
+  if(velocityY!==0||jumpY>0){velocityY-=26*dt;jumpY+=velocityY*dt;if(jumpY<=0){jumpY=0;velocityY=0}}
+  slideTime=Math.max(0,slideTime-dt);body.scale.y=slideTime>0?.43:1;player.position.y=jumpY;
+  const swing=slideTime>0?0:Math.sin(elapsed*speed*.65)*.55;
+  legs[0].rotation.x=swing;legs[1].rotation.x=-swing;arms[0].rotation.x=-swing;arms[1].rotation.x=swing;
+  animatePolice(dt);
+  for(const tile of tiles){tile.position.z+=travel;if(tile.position.z>28)tile.position.z-=192}
+  const bottom=jumpY+.06,top=jumpY+(slideTime>0?.9:2.1);
+  for(let i=objects.length-1;i>=0;i--){
+   const o=objects[i],m=o.mesh;m.position.z+=travel;
+   if(o.kind==='coin'){
+    m.rotation.y+=dt*4;
+    if(Math.abs(m.position.x-player.position.x)<.8&&Math.abs(m.position.z)<.75&&m.position.y>bottom-.3&&m.position.y<top+.3){coins++;scene.remove(m);objects.splice(i,1);continue}
+   }else if(Math.abs(m.position.z)<o.depth/2+.32&&Math.abs(m.position.x-player.position.x)<o.width/2+.28&&top>o.bottom&&bottom<o.top){finish();break}
+   if(m.position.z>16){scene.remove(m);objects.splice(i,1)}
+  }
+ }
+ function frame(now){
+  requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.1);last=now;
+  if(state==='running'){accumulator+=dt;while(accumulator>=STEP&&state==='running'){tick(STEP);accumulator-=STEP}updateHud()}else accumulator=0;
+  if(state==='catching'&&!document.hidden){catchTime+=dt;animatePolice(dt,true);if(catchTime>=1.2)showGameOver()}
+  camera.position.set(player.position.x*.18,5.6,10);camera.lookAt(player.position.x*.15,1.25,-14);
+  renderer.render(scene,camera);
+ }
+ requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>
