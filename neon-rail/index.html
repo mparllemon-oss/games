@@ -8,6 +8,27 @@
 *{box-sizing:border-box}body{margin:0;overflow:hidden;background:#101b35;color:#fff;font-family:system-ui,sans-serif;touch-action:none}canvas{display:block;width:100%;height:100%}button{font:inherit;cursor:pointer;color:#fff;border:1px solid #ffffff40;border-radius:16px;background:#172844;padding:12px 20px;touch-action:none}button:hover{background:#284367}button:focus-visible{outline:3px solid #fbd56b}button:disabled{opacity:.5;cursor:wait}[hidden]{display:none!important}
 #hud{position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;right:16px;display:flex;gap:10px;align-items:center;pointer-events:none}.stat{background:#101b35cb;border:1px solid #ffffff25;border-radius:16px;padding:10px 16px;backdrop-filter:blur(10px)}.stat small{display:block;color:#a9c8df;font-size:10px;letter-spacing:2px}.stat strong{font-size:24px}#pause{margin-left:auto;pointer-events:auto}#overlay{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:#07132770;backdrop-filter:blur(6px)}.card{width:min(440px,100%);max-height:90dvh;overflow:auto;padding:30px;border-radius:28px;background:linear-gradient(145deg,#14263ef5,#0e1730f5);border:1px solid #ffffff30;box-shadow:0 30px 100px #0006;text-align:center}.eyebrow{color:#72f0d4;font-size:12px;letter-spacing:4px}h1{font-size:clamp(36px,8vw,58px);line-height:1;margin:16px 0}p{color:#b7c9dc;line-height:1.6}.primary{background:#75efd5;color:#082d33;font-weight:800;width:100%;margin-top:15px}.primary:hover{background:#abffe9}.guide{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;color:#dce8f5}.guide span{padding:10px;background:#ffffff08;border-radius:10px}#controls{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}#controls div{display:flex;gap:8px}#controls button{pointer-events:auto;width:58px;height:54px;padding:0;font-size:23px;background:#101b35b8;backdrop-filter:blur(8px);user-select:none}#hint{position:fixed;bottom:85px;width:100%;text-align:center;color:#e4f4ff;font-size:12px;pointer-events:none} @media(max-width:480px){.stat{padding:8px 12px}.stat strong{font-size:20px}.card{padding:24px}#controls button{width:52px}}
 </style>
+<style>
+/* Fit the visible phone viewport, including notches and browser toolbars. */
+html,body{width:100%;height:100%;height:100dvh;overscroll-behavior:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#hud{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));gap:6px}
+#controls{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right))}
+#hint{bottom:calc(82px + env(safe-area-inset-bottom));padding:0 12px}
+@media(pointer:coarse),(max-width:600px){
+ .stat,#controls button,#overlay{backdrop-filter:none}
+ .stat{background:#101b35ed;min-width:64px;padding:8px 10px}
+ .stat small{font-size:9px;letter-spacing:1px}.stat strong{font-size:19px}
+ #pause{padding:10px 14px}#controls button{width:56px;height:56px;background:#14263ef0}
+ #hint{font-size:11px}.card{padding:20px;max-height:calc(100dvh - 24px);box-shadow:none}
+ .card p{margin:10px 0}.guide{font-size:11px}h1{font-size:40px;margin:12px 0}
+}
+@media(max-height:500px){
+ #hud{top:max(6px,env(safe-area-inset-top))}.stat{padding:5px 10px}.stat strong{font-size:17px}
+ #controls{bottom:max(8px,env(safe-area-inset-bottom))}#controls button{height:46px;width:52px}
+ #hint{display:none}.card{padding:12px 22px}.card h1{font-size:30px;margin:8px 0}.card p{font-size:12px;margin:6px 0}.guide span{padding:6px}.primary{padding:10px;margin-top:8px}
+}
+</style>
 </head>
 <body>
 <div id="hud"><div class="stat"><small>SCORE</small><strong id="score">0</strong></div><div class="stat"><small>COINS</small><strong id="coins">0</strong></div><div class="stat"><small>BEST</small><strong id="best">0</strong></div><button id="pause" aria-label="Pause game" hidden>Ⅱ</button></div>
@@ -25,17 +46,20 @@ function showError(message){document.getElementById('message').textContent=messa
 function boot(){
  'use strict';
  const $=id=>document.getElementById(id),lanes=[-3,0,3];
+ const mobile=matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHeight)<600;
+ const viewport=()=>({w:Math.round(window.visualViewport?.width||innerWidth),h:Math.round(window.visualViewport?.height||innerHeight)});
+ let renderScale=mobile?Math.min(devicePixelRatio,1):Math.min(devicePixelRatio,1.5);
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x9ac9dc);scene.fog=new THREE.Fog(0x9ac9dc,38,155);
  const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,220);
- const renderer=new THREE.WebGLRenderer({antialias:true});
- renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setSize(innerWidth,innerHeight);
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
+ const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPreference:'high-performance'});
+ renderer.setPixelRatio(renderScale);renderer.setSize(innerWidth,innerHeight);
+ renderer.shadowMap.enabled=!mobile;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
  document.body.prepend(renderer.domElement);
  scene.add(new THREE.HemisphereLight(0xe8f7ff,0x515068,2));
- const sun=new THREE.DirectionalLight(0xffefcc,2.6);sun.position.set(-10,20,8);sun.castShadow=true;
+ const sun=new THREE.DirectionalLight(0xffefcc,2.6);sun.position.set(-10,20,8);sun.castShadow=!mobile;
  sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-18,right:18,top:20,bottom:-35,near:1,far:80});sun.shadow.bias=-.001;scene.add(sun);
  const materials={};
- function mat(color){return materials[color]||(materials[color]=new THREE.MeshStandardMaterial({color,roughness:.65}))}
+ function mat(color){return materials[color]||(materials[color]=mobile?new THREE.MeshLambertMaterial({color}):new THREE.MeshStandardMaterial({color,roughness:.65}))}
  const box=new THREE.BoxGeometry(1,1,1);
  function cube(parent,color,x,y,z,w,h,d){const m=new THREE.Mesh(box,mat(color));m.position.set(x,y,z);m.scale.set(w,h,d);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
  // Recycling track segments keeps memory bounded, even during long runs.
@@ -52,6 +76,10 @@ function boot(){
    cube(tile,0x243b56,side*5.8,2.2,-5,.12,4.4,.12);
    cube(tile,0xffe8ad,side*5.8,4.4,-5,.6,.18,.6);
   }
+  // Batch identical box materials: hundreds of track parts become a few draw calls.
+  const batches=new Map();
+  for(const mesh of [...tile.children]){mesh.updateMatrix();if(!batches.has(mesh.material))batches.set(mesh.material,[]);batches.get(mesh.material).push(mesh.matrix.clone());tile.remove(mesh)}
+  for(const [material,matrices] of batches){const batch=new THREE.InstancedMesh(box,material,matrices.length);matrices.forEach((matrix,n)=>batch.setMatrixAt(n,matrix));batch.instanceMatrix.needsUpdate=true;batch.castShadow=!mobile;batch.receiveShadow=!mobile;batch.computeBoundingSphere();tile.add(batch)}
   scene.add(tile);tiles.push(tile);
  }
  // Avatar feet sit at y=0; scaling vertically creates a crouch pose.
@@ -95,7 +123,7 @@ function boot(){
  const coinGeometry=new THREE.TorusGeometry(.32,.095,7,14);
  const objects=[];let state='menu',lane=1,jumpY=0,velocityY=0,slideTime=0,distance=0,coins=0,speed=16,spawnIn=18,elapsed=0,best=0;
  try{best=Number(localStorage.getItem('neonRailBest'))||0}catch{} $('best').textContent=best;
- function updateHud(){$('score').textContent=Math.floor(distance+coins*25);$('coins').textContent=coins}
+ function updateHud(){const score=String(Math.floor(distance+coins*25)),count=String(coins);if($('score').textContent!==score)$('score').textContent=score;if($('coins').textContent!==count)$('coins').textContent=count}
  function clearObjects(){for(const o of objects)scene.remove(o.mesh);objects.length=0}
  function addObstacle(l,type,z){
   const g=new THREE.Group();g.position.set(lanes[l],0,z);
@@ -172,10 +200,14 @@ function boot(){
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='running')pause()});
  window.addEventListener('blur',()=>{if(state==='running')pause()});
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();state='error';$('overlay').hidden=false;$('controls').hidden=true;showError('Graphics context lost. Reload to play again.')});
- function resize(){camera.aspect=innerWidth/innerHeight;camera.fov=camera.aspect<.7?72:58;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
- window.addEventListener('resize',resize);resize();
+ function resize(){const {w,h}=viewport();camera.aspect=w/h;
+  // Preserve horizontal coverage so all three lanes fit on portrait phones.
+  camera.fov=Math.min(100,Math.max(50,2*Math.atan(Math.tan(THREE.MathUtils.degToRad(25))/camera.aspect)*180/Math.PI));
+  camera.updateProjectionMatrix();renderer.setSize(w,h);renderer.domElement.style.width=w+'px';renderer.domElement.style.height=h+'px';
+ }
+ window.addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);resize();
  // Fixed simulation steps make jumps and collisions independent of frame rate.
- const STEP=1/120;let accumulator=0,last=performance.now();
+ const STEP=1/60;let accumulator=0,last=performance.now(),hudTimer=0,qualityTime=0,qualityFrames=0;
  function tick(dt){
   elapsed+=dt;speed=Math.min(36,16+elapsed*.18);const travel=speed*dt;distance+=travel;spawnIn-=travel;
   if(spawnIn<=0){spawnRow();spawnIn+=speed*1.65+8}
@@ -199,9 +231,10 @@ function boot(){
  }
  function frame(now){
   requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.1);last=now;
-  if(state==='running'){accumulator+=dt;while(accumulator>=STEP&&state==='running'){tick(STEP);accumulator-=STEP}updateHud()}else accumulator=0;
+  if(state==='running'){accumulator+=dt;while(accumulator>=STEP&&state==='running'){tick(STEP);accumulator-=STEP}hudTimer+=dt;if(hudTimer>=.1){updateHud();hudTimer=0}}else accumulator=0;
   if(state==='catching'&&!document.hidden){catchTime+=dt;animatePolice(dt,true);if(catchTime>=1.2)showGameOver()}
-  camera.position.set(player.position.x*.18,5.6,10);camera.lookAt(player.position.x*.15,1.25,-14);
+  if(mobile&&state==='running'){qualityTime+=dt;qualityFrames++;if(qualityTime>=3){if(qualityFrames/qualityTime<43&&renderScale>.65){renderScale=Math.max(.65,renderScale-.15);renderer.setPixelRatio(renderScale);resize()}qualityTime=qualityFrames=0}}
+  camera.position.set(player.position.x*.08,6.2,13);camera.lookAt(player.position.x*.08,1.25,-12);
   renderer.render(scene,camera);
  }
  requestAnimationFrame(frame);
