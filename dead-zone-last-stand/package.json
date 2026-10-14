@@ -1,0 +1,7 @@
+{
+  "name": "dead-zone-last-stand",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"dev": "node scripts/serve.mjs", "build": "node scripts/build.mjs", "preview": "node scripts/serve.mjs dist"}
+}
