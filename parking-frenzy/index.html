@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07130f">
+<title>Parking Frenzy — Playable Prototype</title>
+<style>
+  :root{color-scheme:dark;--mint:#a5f2c6;--lime:#c2fb81;--panel:rgba(10,22,20,.76);--line:rgba(224,255,238,.14)}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#091511;color:#effff6;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;touch-action:none}
+  #game{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .hud{position:fixed;inset:0;pointer-events:none;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);display:flex;flex-direction:column;justify-content:space-between}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-top:12px}
+  .brand,.stats,.controls,.gear,.iconbtn{background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.24);backdrop-filter:blur(12px)}
+  .brand{border-radius:16px;padding:10px 14px;min-width:146px}
+  .brand small{display:block;color:#9ccbb0;font-size:9px;letter-spacing:.19em;font-weight:800;text-transform:uppercase}
+  .brand strong{display:block;font-size:15px;letter-spacing:.02em;margin-top:2px}
+  .stats{border-radius:16px;padding:9px 12px;display:flex;gap:15px;align-items:center}
+  .stat small{display:block;color:#9bb3a5;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:800}
+  .stat b{font-size:17px;font-variant-numeric:tabular-nums}
+  .rightTop{display:flex;gap:8px;align-items:flex-start}
+  .iconbtn{pointer-events:auto;border-radius:13px;width:42px;height:42px;color:white;font-size:17px;cursor:pointer}
+  .mission{position:absolute;top:88px;left:50%;transform:translateX(-50%);max-width:min(92vw,420px);white-space:nowrap;text-align:center;border:1px solid rgba(190,255,215,.19);background:rgba(7,25,18,.74);padding:9px 15px;border-radius:999px;font-size:12px;font-weight:700;box-shadow:0 5px 25px #0003}
+  .mission em{font-style:normal;color:var(--lime)}
+  .bottom{display:flex;align-items:flex-end;justify-content:space-between;padding:0 2px 14px;gap:10px}
+  .wheelWrap{pointer-events:auto;width:clamp(116px,25vw,164px);height:clamp(116px,25vw,164px);display:grid;place-items:center;position:relative;touch-action:none}
+  .wheel{width:100%;height:100%;border-radius:50%;border:9px solid rgba(231,255,240,.72);box-shadow:inset 0 0 0 5px #091511aa,0 10px 28px #0007;background:radial-gradient(circle,#173127 0 14%,transparent 15%),conic-gradient(from 45deg,transparent 0 12%,#d9f7e7 12% 16%,transparent 16% 42%,#d9f7e7 42% 46%,transparent 46% 100%);position:relative;transition:transform .05s linear}
+  .wheel:before,.wheel:after{content:"";position:absolute;background:#d9f7e7;border-radius:5px;left:calc(50% - 3px);top:10%;height:80%;width:6px;transform-origin:center}
+  .wheel:after{transform:rotate(90deg)}
+  .wheelHub{position:absolute;left:50%;top:50%;width:35%;height:35%;transform:translate(-50%,-50%);border-radius:50%;background:linear-gradient(145deg,#c6ff9a,#57b37e);border:5px solid #173127;display:grid;place-items:center;color:#10291c;font-weight:1000;font-size:10px}
+  .wheelLabel{position:absolute;bottom:-18px;font-size:9px;letter-spacing:.13em;color:#b7d7c3;font-weight:900}
+  .centerControls{display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:auto}
+  .gear{border-radius:12px;padding:9px 14px;color:#fff;font-weight:900;font-size:11px;letter-spacing:.1em;cursor:pointer}
+  .gear span{color:var(--lime);margin-left:5px}
+  .pedals{pointer-events:auto;display:flex;align-items:flex-end;gap:9px}
+  .pedal{height:clamp(82px,16vh,124px);width:clamp(64px,15vw,92px);border-radius:18px;border:1px solid var(--line);color:#effff6;font-size:11px;font-weight:1000;letter-spacing:.1em;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;background:var(--panel);box-shadow:0 10px 28px #0005;touch-action:none;cursor:pointer}
+  .pedal .ico{font-size:24px;line-height:1}.pedal.gas{background:linear-gradient(155deg,#386f4e,#102b20 72%);border-color:#76d59577}.pedal.brake{background:linear-gradient(155deg,#694533,#271a16 72%);border-color:#eea57866}.pedal.active{transform:translateY(3px);filter:brightness(1.35)}
+  .damage{position:absolute;top:78px;right:62px;width:104px}.damage small{font-size:9px;letter-spacing:.12em;color:#b8c9bd;font-weight:900}.bar{height:6px;border-radius:6px;background:#e5fff122;margin-top:5px;overflow:hidden}.bar i{display:block;width:0;height:100%;background:linear-gradient(90deg,#88e7a5,#ff8e69);transition:width .2s}
+  .toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);padding:15px 22px;border-radius:16px;background:#07150fe8;border:1px solid #bdffcf55;color:#eaffef;font-weight:900;font-size:18px;text-align:center;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .modal{position:fixed;inset:0;background:rgba(3,11,8,.64);display:none;place-items:center;padding:22px;backdrop-filter:blur(7px);z-index:5}.modal.show{display:grid}.card{width:min(92vw,390px);border-radius:24px;padding:25px;background:linear-gradient(145deg,#18362a,#0d1c16);border:1px solid #b9ffcd2c;box-shadow:0 30px 80px #0008;text-align:center}.card h1{margin:0 0 8px;font-size:25px}.card p{margin:0 0 20px;color:#b5cabb;line-height:1.55;font-size:14px}.primary{border:0;border-radius:13px;padding:13px 22px;background:linear-gradient(100deg,#c2fb81,#6dd49a);color:#0d2718;font-weight:1000;font-size:14px;cursor:pointer}
+  .help{position:absolute;left:50%;bottom:clamp(142px,25vh,200px);transform:translateX(-50%);color:#d6e8dc;background:#07160fa8;border:1px solid #e4ffec22;padding:7px 11px;border-radius:10px;font-size:10px;text-align:center;white-space:nowrap;pointer-events:none}
+  @media(max-width:600px){.top{padding-top:8px}.brand{min-width:112px;padding:8px 10px}.brand strong{font-size:13px}.brand small{font-size:8px}.stats{gap:9px;padding:8px}.stat b{font-size:15px}.stat small{font-size:8px}.mission{top:73px;font-size:10px;padding:8px 12px}.damage{top:70px;right:59px;width:76px}.bottom{padding-bottom:calc(12px + env(safe-area-inset-bottom))}.help{bottom:clamp(138px,22vh,185px)}}
+  @media(max-height:560px){.wheelWrap{width:100px;height:100px}.pedal{height:72px}.bottom{padding-bottom:6px}.mission{top:62px}.help{bottom:100px}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Playable top-down parking game"></canvas>
+<div class="hud">
+  <div class="top">
+    <div class="brand"><small>Parking simulator</small><strong>LOT RUNNER <span style="color:#c2fb81">03</span></strong></div>
+    <div class="stats">
+      <div class="stat"><small>Speed</small><b id="speed">0 <small style="display:inline;font-size:10px">km/h</small></b></div>
+      <div class="stat"><small>Coins</small><b id="coins">0</b></div>
+      <div class="stat"><small>Time</small><b id="time">00:00</b></div>
+    </div>
+    <div class="rightTop"><button class="iconbtn" id="pause" aria-label="Pause">Ⅱ</button></div>
+  </div>
+  <div class="mission">MISSION <em>Park in the glowing bay</em> · Keep damage below 100%</div>
+  <div class="damage"><small>CAR CONDITION</small><div class="bar"><i id="damageBar"></i></div></div>
+  <div class="help" id="help">Reach the green bay · stop slowly · align with the arrows</div>
+  <div class="toast" id="toast">Nice parking!</div>
+  <div class="bottom">
+    <div class="wheelWrap" id="wheelTouch"><div class="wheel" id="wheel"><div class="wheelHub">TURN</div></div><div class="wheelLabel">STEERING</div></div>
+    <div class="centerControls"><button class="gear" id="gear">GEAR <span>D</span></button></div>
+    <div class="pedals">
+      <button class="pedal brake" id="brake"><span class="ico">▰</span><span>BRAKE</span></button>
+      <button class="pedal gas" id="gas"><span class="ico">⌃</span><span>GAS</span></button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="modal"><div class="card"><h1 id="modalTitle">Paused</h1><p id="modalText">Take a breath before the next turn.</p><button class="primary" id="resume">Continue driving</button></div></div>
+<script>
+(() => {
+  const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+  const speedEl = document.getElementById('speed'), coinsEl = document.getElementById('coins'), timeEl = document.getElementById('time');
+  const damageBar = document.getElementById('damageBar'), wheelEl = document.getElementById('wheel');
+  const modal = document.getElementById('modal'), modalTitle = document.getElementById('modalTitle'), modalText = document.getElementById('modalText');
+  const W = 1700, H = 2300;
+  let dpr=1, vw=0, vh=0, scale=1, last=0, elapsed=0, paused=false, finished=false, crashed=false, toastTimer=0;
+  let player, camera={x:850,y:1680}, coins=[], traffic=[], cones=[], input={left:false,right:false,gas:false,brake:false,steer:0}, gear=1;
+  const bay={x:1165,y:410,angle:-Math.PI/2,w:76,h:132};
+  const roads=[{x:520,y:170,w:660,h:1900},{x:350,y:1390,w:1000,h:340},{x:350,y:790,w:1000,h:310},{x:780,y:260,w:730,h:340}];
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  function resize(){dpr=Math.min(devicePixelRatio||1,2);vw=innerWidth;vh=innerHeight;canvas.width=vw*dpr;canvas.height=vh*dpr;canvas.style.width=vw+'px';canvas.style.height=vh+'px';ctx.setTransform(dpr,0,0,dpr,0,0);scale=Math.min(vw/820,vh/820);scale=clamp(scale,.32,.85)}
+  addEventListener('resize',resize);resize();
+  function reset(){
+    player={x:850,y:1880,a:-Math.PI/2,v:0,damage:0,coins:0};camera={x:player.x,y:player.y};elapsed=0;paused=false;finished=false;crashed=false;gear=1;
+    coins=[{x:850,y:1580},{x:820,y:1220},{x:1080,y:1040},{x:1160,y:650},{x:920,y:520}];
+    cones=[{x:700,y:1630},{x:990,y:1450},{x:990,y:1200},{x:1120,y:930},{x:1300,y:690},{x:880,y:530}];
+    traffic=[{x:410,y:1490,a:0,s:75,dir:1,color:'#e4a84f',min:390,max:1320},{x:1290,y:930,a:Math.PI,s:54,dir:-1,color:'#92b9d1',min:390,max:1320},{x:500,y:870,a:0,s:61,dir:1,color:'#c57c6f',min:390,max:1320}];
+    input={left:false,right:false,gas:false,brake:false,steer:0};document.getElementById('gear').innerHTML='GEAR <span>D</span>';coinsEl.textContent='0';damageBar.style.width='0%';timeEl.textContent='00:00';showModal(false);document.getElementById('help').textContent='Reach the green bay · stop slowly · align with the arrows';
+  }
+  function showModal(on,title='',text=''){modal.classList.toggle('show',on);if(title)modalTitle.textContent=title;if(text)modalText.textContent=text;}
+  function notify(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');toastTimer=1.8}
+  function roundRect(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);}
+  function screen(p){return {x:vw/2+(p.x-camera.x)*scale,y:vh*.68+(p.y-camera.y)*scale}}
+  function drawWorldRect(x,y,w,h,color,r=0){const p=screen({x,y});ctx.fillStyle=color;if(r){roundRect(ctx,p.x-w*scale/2,p.y-h*scale/2,w*scale,h*scale,r*scale);ctx.fill()}else ctx.fillRect(p.x-w*scale/2,p.y-h*scale/2,w*scale,h*scale)}
+  function drawParkingBay(x,y,angle,target=false){const p=screen({x,y});ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);ctx.strokeStyle=target?'#c6ff87':'rgba(240,250,242,.45)';ctx.lineWidth=target?2.4:1.3;ctx.setLineDash(target?[]:[4,4]);ctx.strokeRect(-35*scale,-63*scale,70*scale,126*scale);ctx.setLineDash([]);if(target){ctx.globalAlpha=.2;ctx.fillStyle='#a8ff77';ctx.fillRect(-35*scale,-63*scale,70*scale,126*scale);ctx.globalAlpha=1;ctx.fillStyle='#caff9d';ctx.font=`900 ${12*scale}px system-ui`;ctx.textAlign='center';ctx.fillText('P',0,5*scale);ctx.beginPath();ctx.moveTo(0,-21*scale);ctx.lineTo(-8*scale,-9*scale);ctx.lineTo(8*scale,-9*scale);ctx.closePath();ctx.fill()}ctx.restore()}
+  function drawCar(x,y,a,color,playerCar=false){const p=screen({x,y}),len=(playerCar?100:82)*scale,w=(playerCar?48:40)*scale;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(a+Math.PI/2);ctx.shadowColor='#0009';ctx.shadowBlur=12*scale;ctx.shadowOffsetY=5*scale;ctx.fillStyle='#111b17';roundRect(ctx,-w*.57,-len*.48,w*1.14,len*.96,10*scale);ctx.fill();ctx.shadowBlur=0;const grad=ctx.createLinearGradient(-w/2,-len/2,w/2,len/2);grad.addColorStop(0,playerCar?'#aaf18a':color);grad.addColorStop(.48,color);grad.addColorStop(1,playerCar?'#428759':'#34474b');ctx.fillStyle=grad;roundRect(ctx,-w/2,-len/2,w,len,9*scale);ctx.fill();ctx.fillStyle='#17332d';roundRect(ctx,-w*.36,-len*.22,w*.72,len*.34,6*scale);ctx.fill();ctx.fillStyle='#7fb6a1';ctx.globalAlpha=.72;ctx.fillRect(-w*.31,-len*.18,w*.62,len*.13);ctx.globalAlpha=1;ctx.fillStyle='#f8e6b0';ctx.fillRect(-w*.4,-len*.45,w*.19,3*scale);ctx.fillRect(w*.21,-len*.45,w*.19,3*scale);ctx.fillStyle='#fa5f4c';ctx.fillRect(-w*.4,len*.41,w*.18,3*scale);ctx.fillRect(w*.22,len*.41,w*.18,3*scale);ctx.fillStyle='#101713';ctx.fillRect(-w*.57,-len*.3,w*.12,len*.2);ctx.fillRect(w*.45,-len*.3,w*.12,len*.2);ctx.fillRect(-w*.57,len*.12,w*.12,len*.2);ctx.fillRect(w*.45,len*.12,w*.12,len*.2);ctx.restore()}
+  function draw(){
+    ctx.clearRect(0,0,vw,vh);const bg=ctx.createLinearGradient(0,0,0,vh);bg.addColorStop(0,'#477d54');bg.addColorStop(1,'#234c39');ctx.fillStyle=bg;ctx.fillRect(0,0,vw,vh);
+    // Grass texture dots, deterministic and lightweight.
+    for(let i=0;i<90;i++){const x=(i*197+31)%W,y=(i*331+77)%H,p=screen({x,y});if(p.x>-10&&p.x<vw+10&&p.y>-10&&p.y<vh+10){ctx.fillStyle=i%3?'rgba(197,238,152,.08)':'rgba(13,52,31,.12)';ctx.beginPath();ctx.arc(p.x,p.y,(i%4+1)*scale,0,Math.PI*2);ctx.fill()}}
+    // Paved parking lot foundation.
+    drawWorldRect(850,1125,1430,2110,'#7d8984',22);
+    // Asphalt driving lanes.
+    for(const r of roads)drawWorldRect(r.x+r.w/2,r.y+r.h/2,r.w,r.h,'#343e3d',18);
+    // Lane center markings.
+    ctx.save();ctx.strokeStyle='rgba(255,235,174,.56)';ctx.lineWidth=2*scale;ctx.setLineDash([15*scale,15*scale]);
+    let a=screen({x:850,y:260}),b=screen({x:850,y:1980});ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    a=screen({x:390,y:1550});b=screen({x:1310,y:1550});ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    a=screen({x:390,y:930});b=screen({x:1310,y:930});ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    // Parking stall rows.
+    for(let row=0;row<3;row++)for(let i=0;i<8;i++){const x=390+i*116,y=1460-row*600;drawParkingBay(x,y,Math.PI/2,false);if((i+row*2)%4===0)drawCar(x,y,Math.PI/2,['#b96d62','#90a4a2','#c3a267'][i%3],false)}
+    // Target stall and painted approach arrows.
+    drawParkingBay(bay.x,bay.y,bay.angle,true);
+    const tp=screen({x:bay.x,y:bay.y+100});ctx.fillStyle='#d2ff9f';ctx.font=`900 ${11*scale}px system-ui`;ctx.textAlign='center';ctx.fillText('PARK HERE',tp.x,tp.y);
+    // Low curbs on lot limits.
+    ctx.strokeStyle='#d9d5a6';ctx.lineWidth=7*scale;ctx.strokeRect(screen({x:145,y:130}).x,screen({x:145,y:130}).y,1410*scale,1980*scale);
+    // Pickups.
+    for(const c of coins){const p=screen(c);ctx.save();ctx.shadowColor='#ffd862';ctx.shadowBlur=18*scale;ctx.fillStyle='#ffd35c';ctx.beginPath();ctx.arc(p.x,p.y,11*scale,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#8e5c18';ctx.font=`900 ${10*scale}px system-ui`;ctx.textAlign='center';ctx.fillText('¢',p.x,p.y+3*scale);ctx.restore()}
+    // Cones and moving traffic.
+    for(const c of cones){const p=screen(c);ctx.fillStyle='#512b1d';ctx.beginPath();ctx.ellipse(p.x,p.y+4*scale,10*scale,5*scale,0,0,7);ctx.fill();ctx.fillStyle='#f19a42';ctx.beginPath();ctx.moveTo(p.x,p.y-10*scale);ctx.lineTo(p.x-7*scale,p.y+5*scale);ctx.lineTo(p.x+7*scale,p.y+5*scale);ctx.closePath();ctx.fill();ctx.fillStyle='#ffe2b1';ctx.fillRect(p.x-4*scale,p.y,p.x?8*scale:8*scale,2*scale)}
+    for(const t of traffic)drawCar(t.x,t.y,t.a,t.color,false);
+    // Player shadow and car.
+    drawCar(player.x,player.y,player.a,'#5fbe79',true);
+    // Parking indicator arrow always points toward the bay.
+    const dx=bay.x-player.x,dy=bay.y-player.y,ang=Math.atan2(dy,dx);ctx.save();ctx.translate(vw/2,vh*.28);ctx.rotate(ang+Math.PI/2);ctx.fillStyle='rgba(203,255,145,.92)';ctx.beginPath();ctx.moveTo(0,-11);ctx.lineTo(-7,5);ctx.lineTo(0,2);ctx.lineTo(7,5);ctx.closePath();ctx.fill();ctx.restore();
+  }
+  function collide(){
+    for(const c of cones){if(dist(player,c)<37){player.damage=clamp(player.damage+10,0,100);player.v*=-.24;const a=Math.atan2(player.y-c.y,player.x-c.x);player.x+=Math.cos(a)*13;player.y+=Math.sin(a)*13;notify('Cone hit · drive carefully');c.x+=Math.cos(a)*18;c.y+=Math.sin(a)*18}}
+    for(const t of traffic){if(dist(player,t)<56){player.damage=clamp(player.damage+18,0,100);player.v*=-.3;t.s*=-1;notify('Traffic collision · damage +' );}}
+    if(player.x<175||player.x>1525||player.y<150||player.y>2100){player.damage=clamp(player.damage+16,0,100);player.x=clamp(player.x,180,1520);player.y=clamp(player.y,155,2095);player.v*=-.3;notify('Curb impact · watch the edge')}
+    damageBar.style.width=player.damage+'%';if(player.damage>=100&&!crashed){crashed=true;paused=true;showModal(true,'Car disabled','Too much damage. Restart the parking challenge and try a cleaner route.');document.getElementById('resume').textContent='Restart challenge'}
+  }
+  function update(dt){
+    if(paused||finished||crashed)return;elapsed+=dt;if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)document.getElementById('toast').classList.remove('show')}
+    const steer=clamp(input.steer+(input.right?1:0)-(input.left?1:0),-1,1);const gas=input.gas?1:0,brake=input.brake?1:0;
+    if(brake){player.v*=Math.max(0,1-3.9*dt)}else if(gas){player.v+=gear*230*dt}else{player.v*=Math.max(0,1-.65*dt)}
+    player.v=clamp(player.v,-gear*0-62,gear*0+155); // final clamp is symmetric
+    const kph=Math.abs(player.v)*.58;player.a+=steer*(.35+Math.min(kph/35,1.4))*(player.v<0?-1:1)*dt;
+    player.x+=Math.cos(player.a)*player.v*dt;player.y+=Math.sin(player.a)*player.v*dt;
+    for(const t of traffic){t.x+=t.dir*t.s*dt;if(t.x>t.max){t.x=t.max;t.dir=-1;t.a=Math.PI}if(t.x<t.min){t.x=t.min;t.dir=1;t.a=0}}
+    for(let i=coins.length-1;i>=0;i--)if(dist(player,coins[i])<43){coins.splice(i,1);player.coins++;coinsEl.textContent=player.coins;notify('+1 coin')}
+    collide();
+    camera.x+=(player.x-camera.x)*Math.min(1,dt*4.5);camera.y+=(player.y-camera.y)*Math.min(1,dt*4.5);
+    const speed=Math.round(Math.abs(player.v)*.58);speedEl.innerHTML=speed+' <small style="display:inline;font-size:10px">km/h</small>';
+    const mins=Math.floor(elapsed/60).toString().padStart(2,'0'),secs=Math.floor(elapsed%60).toString().padStart(2,'0');timeEl.textContent=mins+':'+secs;
+    if(dist(player,bay)<50&&speed<5){const diff=Math.abs((((player.a-bay.angle)+Math.PI*3)%(Math.PI*2))-Math.PI);if(diff<.22){finished=true;paused=true;showModal(true,'Perfect parking!','Challenge complete · '+player.coins+' coins collected in '+timeEl.textContent+'.');document.getElementById('resume').textContent='Play again'}else if(dist(player,bay)<48)document.getElementById('help').textContent='Turn slightly to line up with the parking arrows'}else document.getElementById('help').textContent=dist(player,bay)<170?'Slow down and line up with the parking arrows':'Reach the green bay · stop slowly · align with the arrows';
+  }
+  function frame(now){const dt=Math.min((now-last)/1000||0,.04);last=now;update(dt);draw();requestAnimationFrame(frame)}
+  function bindHold(id,key){const el=document.getElementById(id);const down=e=>{e.preventDefault();input[key]=true;el.classList.add('active')};const up=e=>{e.preventDefault();input[key]=false;el.classList.remove('active')};el.addEventListener('pointerdown',down);el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('pointerleave',up)}
+  bindHold('gas','gas');bindHold('brake','brake');
+  document.getElementById('gear').addEventListener('click',()=>{gear*=-1;document.getElementById('gear').innerHTML='GEAR <span>'+(gear===1?'D':'R')+'</span>'});
+  const wheelTouch=document.getElementById('wheelTouch');let activePointer=null,lastX=0;
+  wheelTouch.addEventListener('pointerdown',e=>{activePointer=e.pointerId;lastX=e.clientX;wheelTouch.setPointerCapture(activePointer)});
+  wheelTouch.addEventListener('pointermove',e=>{if(activePointer!==e.pointerId)return;const delta=e.clientX-lastX;lastX=e.clientX;input.steer=clamp(input.steer+delta*.018,-1,1);wheelEl.style.transform=`rotate(${-input.steer*150}deg)`});
+  const releaseWheel=()=>{activePointer=null;input.steer=0;wheelEl.style.transition='transform .32s ease';wheelEl.style.transform='rotate(0deg)';setTimeout(()=>wheelEl.style.transition='transform .05s linear',340)};
+  wheelTouch.addEventListener('pointerup',releaseWheel);wheelTouch.addEventListener('pointercancel',releaseWheel);
+  addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','a','d','w','s'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft'||e.key==='a')input.left=true;if(e.key==='ArrowRight'||e.key==='d')input.right=true;if(e.key==='ArrowUp'||e.key==='w')input.gas=true;if(e.key==='ArrowDown'||e.key==='s'||e.key===' ')input.brake=true;if(e.key.toLowerCase()==='r')document.getElementById('gear').click();if(e.key==='Escape')togglePause()});
+  addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a')input.left=false;if(e.key==='ArrowRight'||e.key==='d')input.right=false;if(e.key==='ArrowUp'||e.key==='w')input.gas=false;if(e.key==='ArrowDown'||e.key==='s'||e.key===' ')input.brake=false});
+  function togglePause(){if(finished||crashed)return;paused=!paused;showModal(paused,paused?'Paused':'',paused?'Take a breath before the next turn.':'');document.getElementById('resume').textContent='Continue driving'}
+  document.getElementById('pause').addEventListener('click',togglePause);
+  document.getElementById('resume').addEventListener('click',()=>{if(finished||crashed){reset()}else{paused=false;showModal(false)}});
+  reset();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
