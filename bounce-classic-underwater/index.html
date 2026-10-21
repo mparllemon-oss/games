@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bounce Classic - Underwater</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:10px;background:#071a35;color:white;font-family:Arial,sans-serif;touch-action:none}
+.game{width:min(460px,100%);padding:11px;background:#10294a;border-radius:18px}
+header{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:0 3px 8px}
+h1{margin:0;color:#ff665f;font-size:19px}.stats{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.pill{background:#194468;border-radius:18px;padding:6px 8px;font-weight:bold;font-size:11px}
+canvas{width:100%;height:auto;display:block;border-radius:12px;outline:none;touch-action:none}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:9px}.hint{font-size:10px;color:#c6e9f6}.buttons{display:flex;gap:6px}
+button{width:45px;height:43px;border:0;border-radius:11px;background:#236080;color:white;font-size:20px;font-weight:bold;touch-action:none}#jump{width:72px;background:#e64e4a;font-size:13px}button:active{filter:brightness(1.3);transform:scale(.96)}
+</style>
+</head>
+<body>
+<div class="game">
+<header><h1>🔴 Bounce Classic</h1><div class="stats"><span class="pill">Hoops <span id="score">0/6</span></span><span class="pill">Ball <span id="size">Small</span></span><span class="pill">❤️ <span id="lives">3</span></span></div></header>
+<canvas id="screen" width="420" height="640" tabindex="0" aria-label="Bounce Classic underwater game"></canvas>
+<div class="controls"><span class="hint">Touch the blue fan for a high jump · orb makes ball big for 20s</span><div class="buttons"><button id="left" aria-label="Move left">◀</button><button id="right" aria-label="Move right">▶</button><button id="jump" aria-label="Jump">JUMP</button></div></div>
+</div>
+<script>
+(()=>{
+const canvas=document.getElementById('screen'),ctx=canvas.getContext('2d');
+const scoreText=document.getElementById('score'),sizeText=document.getElementById('size'),livesText=document.getElementById('lives');
+const W=420,H=640,worldWidth=2400;
+const platforms=[
+{x:0,y:580,w:360,h:60},{x:480,y:580,w:360,h:60},{x:960,y:580,w:360,h:60},{x:1440,y:580,w:360,h:60},{x:1920,y:580,w:480,h:60},
+{x:0,y:60,w:360,h:60},{x:120,y:120,w:60,h:240},{x:540,y:450,w:180,h:24},{x:900,y:460,w:60,h:120},
+{x:1020,y:450,w:180,h:24},{x:1380,y:60,w:300,h:60},{x:1500,y:120,w:60,h:180},{x:1740,y:450,w:120,h:24},
+{x:1980,y:460,w:60,h:120},{x:2100,y:450,w:180,h:24}];
+const spikes=[
+{x:390,y:520,w:48,h:60},{x:444,y:520,w:30,h:60},{x:750,y:520,w:48,h:60},{x:870,y:520,w:30,h:60},
+{x:1260,y:520,w:48,h:60},{x:1360,y:520,w:42,h:60},{x:1640,y:520,w:48,h:60},{x:1840,y:520,w:48,h:60},{x:2280,y:520,w:48,h:60}];
+const hoops=[{x:300,y:480},{x:660,y:405},{x:1120,y:405},{x:1580,y:325},{x:1880,y:500},{x:2180,y:405}];
+const jumpFan={x:760,y:455,r:30,ready:true},orb={x:600,y:548,r:21},checkpoints=[960,1800];
+const ball={x:55,y:568,r:12,vx:0,vy:0,onGround:false},input={left:false,right:false};
+let got=Array(hoops.length).fill(false),state='playing',lives=3,bigTimer=0,orbReady=true,last=0,cameraX=0,respawnX=55,time=0,bubbleTimer=0,bubbles=[],splashes=[];
+function updateUI(){scoreText.textContent=got.filter(Boolean).length+'/'+hoops.length;sizeText.textContent=bigTimer>0?'BIG '+Math.ceil(bigTimer)+'s':'Small';livesText.textContent=lives}
+function restart(){ball.x=55;ball.y=568;ball.r=12;ball.vx=ball.vy=0;ball.onGround=false;got=Array(hoops.length).fill(false);state='playing';lives=3;bigTimer=0;orbReady=true;cameraX=0;respawnX=55;bubbles=[];splashes=[];jumpFan.ready=true;updateUI()}
+function circleRect(cx,cy,r,q){const x=Math.max(q.x,Math.min(cx,q.x+q.w)),y=Math.max(q.y,Math.min(cy,q.y+q.h));return (cx-x)**2+(cy-y)**2<r*r}
+function jump(){if(state!=='playing'){restart();return}if(!ball.onGround)return;ball.vy=-470;ball.onGround=false;splashes.push({x:ball.x,y:ball.y+ball.r+2,life:.55,max:.55});for(let i=0;i<7;i++)bubbles.push({x:ball.x+(Math.random()-.5)*24,y:ball.y+ball.r,r:2+Math.random()*3,vy:35+Math.random()*45,life:1.1})}
+function loseLife(){lives--;if(lives<=0)state='over';else{ball.x=respawnX;ball.y=580-ball.r;ball.vx=ball.vy=0;ball.onGround=true}updateUI()}
+function update(dt){
+ time+=dt;if(state!=='playing')return;
+ const direction=(input.right?1:0)-(input.left?1:0);if(direction)ball.vx+=direction*1250*dt;else ball.vx*=Math.exp(-(ball.onGround?10:2)*dt);ball.vx=Math.max(-235,Math.min(235,ball.vx));
+ const oldX=ball.x;ball.x+=ball.vx*dt;
+ for(const p of platforms){const overlap=ball.y+ball.r>p.y+3&&ball.y-ball.r<p.y+p.h;if(!overlap)continue;if(ball.vx>0&&oldX+ball.r<=p.x&&ball.x+ball.r>p.x)ball.x=p.x-ball.r;if(ball.vx<0&&oldX-ball.r>=p.x+p.w&&ball.x-ball.r<p.x+p.w)ball.x=p.x+p.w+ball.r}
+ ball.x=Math.max(ball.r,Math.min(worldWidth-ball.r,ball.x));
+ const oldBottom=ball.y+ball.r,oldTop=ball.y-ball.r;ball.vy+=720*dt;ball.vy=Math.min(ball.vy,420);ball.y+=ball.vy*dt;ball.onGround=false;
+ for(const p of platforms){if(ball.x+ball.r<=p.x||ball.x-ball.r>=p.x+p.w)continue;if(ball.vy>=0&&oldBottom<=p.y&&ball.y+ball.r>=p.y){ball.y=p.y-ball.r;ball.vy=0;ball.onGround=true}else if(ball.vy<0&&oldTop>=p.y+p.h&&ball.y-ball.r<=p.y+p.h){ball.y=p.y+p.h+ball.r;ball.vy=0}}
+ if(ball.y>H+100){loseLife();return}
+ const fd=Math.hypot(ball.x-jumpFan.x,ball.y-jumpFan.y);if(fd>ball.r+jumpFan.r+24)jumpFan.ready=true;if(jumpFan.ready&&fd<ball.r+jumpFan.r){jumpFan.ready=false;ball.vy=-730;ball.onGround=false;splashes.push({x:jumpFan.x,y:jumpFan.y+25,life:.7,max:.7});for(let i=0;i<12;i++)bubbles.push({x:jumpFan.x+(Math.random()-.5)*38,y:jumpFan.y,r:2+Math.random()*4,vy:45+Math.random()*65,life:1.4})}
+ for(const s of spikes)if(circleRect(ball.x,ball.y,ball.r,s)){loseLife();return}
+ checkpoints.forEach(cp=>{if(ball.x>cp)respawnX=cp});
+ const d=Math.hypot(ball.x-orb.x,ball.y-orb.y);if(d>ball.r+orb.r+18)orbReady=true;if(orbReady&&d<ball.r+orb.r){const r=ball.r;ball.r=27;ball.y-=ball.r-r;bigTimer=20;orbReady=false;updateUI()}
+ if(bigTimer>0){const before=Math.ceil(bigTimer);bigTimer=Math.max(0,bigTimer-dt);if(bigTimer===0){const r=ball.r;ball.r=12;ball.y-=ball.r-r;updateUI()}else if(Math.ceil(bigTimer)!==before)updateUI()}
+ hoops.forEach((h,i)=>{if(!got[i]&&Math.hypot(ball.x-h.x,ball.y-h.y)<ball.r+17){got[i]=true;updateUI()}});
+ if(got.every(Boolean)&&ball.x>worldWidth-100&&ball.y>520)state='won';
+ cameraX=Math.max(0,Math.min(worldWidth-W,ball.x-W*.36));
+ bubbleTimer+=dt;if(!ball.onGround&&bubbleTimer>.11){bubbleTimer=0;bubbles.push({x:ball.x+(Math.random()-.5)*ball.r,y:ball.y-ball.r*.3,r:2+Math.random()*3,vy:38+Math.random()*42,life:1.5})}
+ for(const b of bubbles){b.y-=b.vy*dt;b.life-=dt}bubbles=bubbles.filter(b=>b.life>0);for(const s of splashes)s.life-=dt;splashes=splashes.filter(s=>s.life>0)
+}
+function drawWater(){
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0879a9');g.addColorStop(.48,'#075887');g.addColorStop(1,'#032b59');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.save();ctx.globalAlpha=.11;ctx.fillStyle='#c2f7ff';for(let i=0;i<5;i++){const x=((i*125-time*22)%620+620)%620-80;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+40,0);ctx.lineTo(x+150,H);ctx.lineTo(x+85,H);ctx.fill()}ctx.restore();
+ for(let row=0;row<11;row++){const base=30+row*57;ctx.beginPath();for(let x=0;x<=W;x+=10){const y=base+Math.sin(x*.022+time*2.4+row)*8+Math.sin(x*.04-time*1.5)*3;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.strokeStyle=row%2?'#b5f7ff24':'#8beaff38';ctx.lineWidth=row%2?1:2;ctx.stroke()}
+ for(let i=0;i<28;i++){const x=(i*79+time*8)%W,r=2+i%4,y=H-((i*91+time*(25+i%4*8))%(H+25));ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.strokeStyle='#c2f5ff88';ctx.lineWidth=1.4;ctx.stroke()}
+}
+function drawBrick(p){
+ ctx.fillStyle='#a83f2d';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#ec6841';ctx.fillRect(p.x,p.y,p.w,7);ctx.strokeStyle='#782c25';ctx.lineWidth=3;
+ for(let y=p.y+30;y<p.y+p.h;y+=30){ctx.beginPath();ctx.moveTo(p.x,y);ctx.lineTo(p.x+p.w,y);ctx.stroke()}
+ for(let y=p.y;y<p.y+p.h;y+=30){const off=(Math.floor((y-p.y)/30)%2)*30;for(let x=p.x+off;x<p.x+p.w;x+=60){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,Math.min(y+30,p.y+p.h));ctx.stroke()}}
+ ctx.fillStyle='#ff9b5a55';for(let x=p.x+8;x<p.x+p.w;x+=37)for(let y=p.y+12;y<p.y+p.h;y+=30)ctx.fillRect(x,y,12,3)
+}
+function drawBlueFan(){
+ const p=jumpFan,pulse=1+Math.sin(time*4)*.08;ctx.save();ctx.translate(p.x,p.y);
+ const glow=ctx.createRadialGradient(0,0,5,0,0,58*pulse);glow.addColorStop(0,'#8df4ff88');glow.addColorStop(.55,'#1598e688');glow.addColorStop(1,'#1598e600');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,58*pulse,0,Math.PI*2);ctx.fill();
+ ctx.rotate(time*.45);
+ for(let i=0;i<8;i++){ctx.rotate(Math.PI/4);ctx.strokeStyle='#102d59';ctx.lineWidth=8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,5);ctx.lineTo(0,-p.r-10);ctx.stroke();ctx.fillStyle='#152f61';ctx.beginPath();ctx.moveTo(-8,-p.r+1);ctx.lineTo(0,-p.r-14);ctx.lineTo(8,-p.r+1);ctx.closePath();ctx.fill();ctx.strokeStyle='#49c9f0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(0,-p.r-5);ctx.stroke()}
+ ctx.fillStyle='#12315f';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#39c9ed';ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.fill();ctx.restore()
+}
+function draw(){
+ drawWater();ctx.save();ctx.translate(-cameraX,0);for(const p of platforms)drawBrick(p);
+ for(const s of spikes){ctx.fillStyle='#ef3d3c';for(let x=s.x;x<s.x+s.w;x+=18){ctx.beginPath();ctx.moveTo(x,s.y+s.h);ctx.lineTo(x+9,s.y);ctx.lineTo(x+18,s.y+s.h);ctx.closePath();ctx.fill()}ctx.fillStyle='#ffb05d';ctx.fillRect(s.x,s.y+s.h-5,s.w,5)}
+ hoops.forEach((h,i)=>{ctx.beginPath();ctx.ellipse(h.x,h.y,11,17,0,0,Math.PI*2);ctx.strokeStyle=got[i]?'#57e48a':'#ffd342';ctx.lineWidth=6;ctx.stroke()});drawBlueFan();
+ const glow=ctx.createRadialGradient(orb.x,orb.y,2,orb.x,orb.y,38);glow.addColorStop(0,'#fff7bd');glow.addColorStop(.45,'#ffbd32aa');glow.addColorStop(1,'#ffbd3200');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(orb.x,orb.y,38,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffcb36';ctx.beginPath();ctx.arc(orb.x,orb.y,orb.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=3;ctx.stroke();
+ for(const cp of checkpoints){ctx.fillStyle='#283d5b';ctx.fillRect(cp,535,5,45);ctx.fillStyle=respawnX===cp?'#55e280':'#ffe064';ctx.beginPath();ctx.moveTo(cp+5,536);ctx.lineTo(cp+24,543);ctx.lineTo(cp+5,550);ctx.fill()}
+ ctx.fillStyle=got.every(Boolean)?'#31b96d':'#68798a';ctx.fillRect(worldWidth-70,510,42,70);ctx.fillStyle='white';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText(got.every(Boolean)?'EXIT':'LOCKED',worldWidth-49,535);
+ for(const s of splashes){const q=1-s.life/s.max;ctx.globalAlpha=s.life/s.max;ctx.strokeStyle='#b8f6ff';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(s.x,s.y,8+q*28,3+q*8,0,0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1;
+ for(const b of bubbles){ctx.globalAlpha=Math.min(1,b.life);ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.strokeStyle='#e2fbff';ctx.lineWidth=1.5;ctx.stroke()}ctx.globalAlpha=1;
+ const bg=ctx.createRadialGradient(ball.x-ball.r*.35,ball.y-ball.r*.4,2,ball.x,ball.y,ball.r);bg.addColorStop(0,'#ffb0a5');bg.addColorStop(.5,'#ff5148');bg.addColorStop(1,'#b91e2b');ctx.fillStyle=bg;ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#9e1c28';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(ball.x+ball.r*.35,ball.y-ball.r*.3,Math.max(2,ball.r*.2),0,Math.PI*2);ctx.fill();ctx.fillStyle='#222';ctx.beginPath();ctx.arc(ball.x+ball.r*.4,ball.y-ball.r*.3,Math.max(1,ball.r*.1),0,Math.PI*2);ctx.fill();ctx.restore();
+ ctx.fillStyle='#ffffff66';ctx.fillRect(12,12,W-24,6);ctx.fillStyle='#ffd342';ctx.fillRect(12,12,(W-24)*Math.min(1,ball.x/worldWidth),6);
+ if(state!=='playing'){ctx.fillStyle='#061b31cc';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='white';ctx.font='bold 29px Arial';ctx.fillText(state==='won'?'LEVEL COMPLETE!':'GAME OVER',W/2,H/2-10);ctx.font='16px Arial';ctx.fillText('Tap the game to play again',W/2,H/2+22)}ctx.textAlign='left'
+}
+function frame(t){const dt=Math.min((t-last)/1000||0,.03);last=t;update(dt);draw();requestAnimationFrame(frame)}
+function hold(id,key){const b=document.getElementById(id);b.addEventListener('pointerdown',e=>{e.preventDefault();input[key]=true;canvas.focus({preventScroll:true})});['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();input[key]=false}))}
+hold('left','left');hold('right','right');document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus({preventScroll:true});jump()});
+document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowleft','arrowright','arrowup',' ','a','d','w','r'].includes(k))e.preventDefault();if(k==='arrowleft'||k==='a')input.left=true;if(k==='arrowright'||k==='d')input.right=true;if(k==='r'){restart();return}if(k===' '||k==='arrowup'||k==='w')jump()});
+document.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(k==='arrowleft'||k==='a')input.left=false;if(k==='arrowright'||k==='d')input.right=false});
+canvas.addEventListener('pointerdown',()=>{canvas.focus({preventScroll:true});if(state!=='playing')restart()});updateUI();requestAnimationFrame(frame)
+})();
+</script>
+</body>
+</html>
