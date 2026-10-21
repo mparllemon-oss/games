@@ -26,7 +26,7 @@ button{width:45px;height:43px;border:0;border-radius:11px;background:#236080;col
 const canvas=document.getElementById('screen'),ctx=canvas.getContext('2d');
 const scoreText=document.getElementById('score'),sizeText=document.getElementById('size'),livesText=document.getElementById('lives');
 const W=420,H=640,worldWidth=2400;
-const roundTargets=[2,4,6],roundGates=[840,1680,2300];
+const roundTargets=[2,4,6],roundGates=[780,1680,2300];
 const extraSpikes=[{x:555,y:420,w:54,h:30},{x:1035,y:420,w:54,h:30},{x:1450,y:520,w:44,h:60},{x:1750,y:420,w:48,h:30},{x:2020,y:420,w:48,h:30},{x:2140,y:520,w:40,h:60}];
 function activeSpikes(){return spikes.concat(round>=2?extraSpikes.slice(0,round===2?2:6):[])}
 const platforms=[
