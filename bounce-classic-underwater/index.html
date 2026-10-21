@@ -64,7 +64,7 @@ function update(dt){
  const d=Math.hypot(ball.x-orb.x,ball.y-orb.y);if(d>ball.r+orb.r+18)orbReady=true;if(orbReady&&d<ball.r+orb.r){const r=ball.r;ball.r=27;ball.y-=ball.r-r;bigTimer=20;orbReady=false;updateUI()}
  if(bigTimer>0){const before=Math.ceil(bigTimer);bigTimer=Math.max(0,bigTimer-dt);if(bigTimer===0){const r=ball.r;ball.r=12;ball.y-=ball.r-r;updateUI()}else if(Math.ceil(bigTimer)!==before)updateUI()}
  hoops.forEach((h,i)=>{if(!got[i]&&Math.hypot(ball.x-h.x,ball.y-h.y)<ball.r+17){got[i]=true;updateUI()}});
- const gate=roundGates[round-1];if(ball.x>gate&&ball.y>500){state=round===3?'won':'roundclear';celebrate()}
+ const gate=roundGates[round-1];if(ball.x+ball.r>=gate-20){state=round===3?'won':'roundclear';celebrate();cameraX=Math.max(0,Math.min(worldWidth-W,ball.x-W*.36));return}
  cameraX=Math.max(0,Math.min(worldWidth-W,ball.x-W*.36));
  bubbleTimer+=dt;if(!ball.onGround&&bubbleTimer>.11){bubbleTimer=0;bubbles.push({x:ball.x+(Math.random()-.5)*ball.r,y:ball.y-ball.r*.3,r:2+Math.random()*3,vy:38+Math.random()*42,life:1.5})}
  for(const b of bubbles){b.y-=b.vy*dt;b.life-=dt}bubbles=bubbles.filter(b=>b.life>0);for(const s of splashes)s.life-=dt;splashes=splashes.filter(s=>s.life>0)
